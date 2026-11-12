@@ -36,7 +36,7 @@ jobs:
       - name: Compile policy tests
         run: |
           clang -std=c11 -Wall -Wextra -Werror -fobjc-arc \
-            tests/test_worse_query_policy.c FFWorseQuery.m \
+            tests/test_worse_query_policy.c FFWorseQuery.m vendor/worse_query/worse_query.m \
             -framework Foundation -o /tmp/ff-wq-policy
           /tmp/ff-wq-policy
 
