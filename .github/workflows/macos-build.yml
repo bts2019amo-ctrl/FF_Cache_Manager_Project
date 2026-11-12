@@ -1,4 +1,4 @@
-name: iOS macOS build
+name: iOS macOS validation
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 'latest-stable'
+          xcode-version: latest-stable
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -35,7 +35,7 @@ jobs:
 
       - name: Compile policy tests
         run: |
-          cc -std=c11 -Wall -Wextra -Werror \
+          clang -std=c11 -Wall -Wextra -Werror -fobjc-arc \
             tests/test_worse_query_policy.c FFWorseQuery.m \
             -framework Foundation -o /tmp/ff-wq-policy
           /tmp/ff-wq-policy
@@ -43,58 +43,7 @@ jobs:
       - name: Validate Python syntax
         run: python3 -m compileall -q .
 
-  full-build:
-    name: Full unsigned IPA build (when donor IPA is configured)
-    runs-on: macos-14
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check donor IPA configuration
-        id: donor
-        env:
-          FILZA_DONOR_IPA_B64: ${{ secrets.FILZA_DONOR_IPA_B64 }}
+      - name: Report full build prerequisite
         run: |
-          if [ -n "$FILZA_DONOR_IPA_B64" ]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "FILZA_DONOR_IPA_B64 is not configured; skipping the full IPA build."
-          fi
-
-      - name: Set up Python
-        if: ${{ steps.donor.outputs.available == 'true' }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install build dependencies
-        if: ${{ steps.donor.outputs.available == 'true' }}
-        run: python3 -m pip install --upgrade pillow lief cryptography
-
-      - name: Restore donor IPA from repository secret
-        if: ${{ steps.donor.outputs.available == 'true' }}
-        env:
-          FILZA_DONOR_IPA_B64: ${{ secrets.FILZA_DONOR_IPA_B64 }}
-        run: |
-          mkdir -p donors
-          printf '%s' "$FILZA_DONOR_IPA_B64" | base64 --decode > donors/FilzaSlop_1.0.3.ipa
-          test -s donors/FilzaSlop_1.0.3.ipa
-
-      - name: Build with the macOS-native toolchain
-        if: ${{ steps.donor.outputs.available == 'true' }}
-        shell: pwsh
-        run: |
-          $env:FF_CLANG = (Get-Command clang).Source
-          $env:FF_SDK = $(xcrun --sdk iphoneos --show-sdk-path)
-          ./build_clean.ps1 -FilzaIpa "$PWD/donors/FilzaSlop_1.0.3.ipa"
-
-      - name: Upload unsigned IPA and manifests
-        if: ${{ steps.donor.outputs.available == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ff-cache-manager-ios-build
-          path: |
-            dist/clean/*.ipa
-            dist/clean/*.json
-            dist/clean/*.sha256
+          echo "Validation completed on macOS."
+          echo "Full unsigned IPA build requires donors/FilzaSlop_1.0.3.ipa, which is not included in the source archive."
