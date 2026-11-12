@@ -1,0 +1,84 @@
+name: iOS macOS build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate sources on macOS
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 'latest-stable'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: python3 -m pip install --upgrade pillow lief cryptography
+
+      - name: Validate plist files
+        run: |
+          plutil -lint Info.plist FrameworkInfo.plist entitlements-jailbroken.plist entitlements-worse-query.example.plist
+
+      - name: Compile policy tests
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror \
+            tests/test_worse_query_policy.c FFWorseQuery.m \
+            -framework Foundation -o /tmp/ff-wq-policy
+          /tmp/ff-wq-policy
+
+      - name: Validate Python syntax
+        run: python3 -m compileall -q .
+
+  full-build:
+    name: Full unsigned IPA build (when donor IPA is configured)
+    if: ${{ secrets.FILZA_DONOR_IPA_B64 != '' }}
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build dependencies
+        run: python3 -m pip install --upgrade pillow lief cryptography
+
+      - name: Restore donor IPA from repository secret
+        env:
+          FILZA_DONOR_IPA_B64: ${{ secrets.FILZA_DONOR_IPA_B64 }}
+        run: |
+          mkdir -p donors
+          printf '%s' "$FILZA_DONOR_IPA_B64" | base64 --decode > donors/FilzaSlop_1.0.3.ipa
+          test -s donors/FilzaSlop_1.0.3.ipa
+
+      - name: Build with the macOS-native toolchain
+        shell: pwsh
+        run: |
+          $env:FF_CLANG = (Get-Command clang).Source
+          $env:FF_SDK = $(xcrun --sdk iphoneos --show-sdk-path)
+          ./build_clean.ps1 -FilzaIpa "$PWD/donors/FilzaSlop_1.0.3.ipa"
+
+      - name: Upload unsigned IPA and manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: ff-cache-manager-ios-build
+          path: |
+            dist/clean/*.ipa
+            dist/clean/*.json
+            dist/clean/*.sha256

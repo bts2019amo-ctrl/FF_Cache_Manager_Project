@@ -1,0 +1,23 @@
+# Build outputs
+dist/
+build/
+DerivedData/
+*.ipa
+*.dSYM/
+
+# Local donor/toolchain material (never commit)
+donors/
+.tools/
+server_payloads/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
