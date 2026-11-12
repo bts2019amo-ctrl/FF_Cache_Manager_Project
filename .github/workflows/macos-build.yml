@@ -1,4 +1,4 @@
-name: iOS macOS validation
+name: iOS macOS build
 
 on:
   push:
@@ -43,7 +43,24 @@ jobs:
       - name: Validate Python syntax
         run: python3 -m compileall -q .
 
-      - name: Report full build prerequisite
+      - name: Download and verify official donor IPA
         run: |
-          echo "Validation completed on macOS."
-          echo "Full unsigned IPA build requires donors/FilzaSlop_1.0.3.ipa, which is not included in the source archive."
+          mkdir -p donors
+          curl -L --fail --retry 3 \
+            -o donors/FilzaSlop_1.0.3.ipa \
+            https://github.com/0xjohnnydev/FilzaSlop/releases/download/v1.0.3/FilzaSlop-v1.0.3-unsigned.ipa
+          echo "aaec476e5e19ba41fe9c1abef7cb53444337769325f9f42ba90353a8661d9d96  donors/FilzaSlop_1.0.3.ipa" | shasum -a 256 -c -
+
+      - name: Build unsigned IPA from this project
+        run: |
+          chmod +x build_macos.sh
+          ./build_macos.sh donors/FilzaSlop_1.0.3.ipa
+
+      - name: Upload project IPA and manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: ff-cache-manager-ios-build
+          path: |
+            dist/clean/*.ipa
+            dist/clean/*.json
+            dist/clean/*.sha256
