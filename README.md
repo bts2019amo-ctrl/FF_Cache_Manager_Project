@@ -17,6 +17,8 @@ O workflow `.github/workflows/macos-build.yml` usa um runner `macos-15` e execut
 
 O ZIP original não incluía `donors/FilzaSlop_1.0.3.ipa`, necessário para extrair a bridge protegida. O workflow agora baixa a versão oficial da release v1.0.3, verifica o SHA-256 publicado e usa `build_macos_full.sh` para compilar a variante completa com o SDK do Xcode. A variante CLEAN continua disponível separadamente em `build_macos.sh`.
 
+A build completa de teste solicitada também reconhece `EXTERNALSYSTEM` como chave local de entrada. Essa chave fica visível no binário e não substitui a autenticação do servidor para recursos online; não deve ser usada como segredo de produção.
+
 O IPA gerado é intencionalmente não assinado. A assinatura e o provisionamento devem ser feitos separadamente com uma identidade e um App Group válidos. A validação em dispositivo real não é realizada pelo GitHub Actions.
 
 ## Teste local da política

@@ -217,6 +217,14 @@ static NSString *FFClipboardLicenseKey(void) {
         ? candidate : nil;
 }
 
+#ifdef FF_LOCAL_TEST_KEY
+// Development-only local entry key. It is intentionally compiled only into
+// the explicitly requested test build and is not persisted as a credential.
+static BOOL FFIsLocalTestKey(NSString *value) {
+    return [value isEqualToString:@"EXTERNALSYSTEM"];
+}
+#endif
+
 static NSString *FFActiveProfileDefaultsKey(NSString *gameIdentifier) {
     if (!FFGameDefinition(gameIdentifier)) return nil;
     return [NSString stringWithFormat:@"%@.%@", FFActiveProfileKey, gameIdentifier];
@@ -6851,6 +6859,30 @@ typedef NS_ENUM(NSInteger, FFMainTab) {
         [self setStatus:@"ENTER A NEW LICENSE KEY" path:nil active:@"—" error:YES];
         return;
     }
+#ifdef FF_LOCAL_TEST_KEY
+    if (FFIsLocalTestKey(trimmed)) {
+        _pendingLicenseKey = nil;
+        _licenseField.text = @"";
+        _licensed = YES;
+        _activationToken = @"ffa_local_external_system";
+        _licenseSnapshot = @{@"mode": @"LOCAL_TEST", @"key": @"EXTERNALSYSTEM"};
+        _deviceSnapshot = @{@"status": @"LOCAL_TEST"};
+        _allowedFeatures = [NSSet setWithArray:@[
+            @"BODY", @"DRAG", @"NECK", @"CHEST", @"MAGIC",
+            @"HOLOGRAM_GUN", @"SKIN_HOLO", @"THREE_D", @"MOD_SKINS", @"ESP"
+        ]];
+        _serverAvailableFeatures = _allowedFeatures;
+        _selectedGameIdentifier = nil;
+        _selectedFeature = nil;
+        _readyToRun = NO;
+        _screen = FFAppScreenGameSelection;
+        [self setBusy:NO];
+        [self setStatus:@"LOCAL TEST KEY ACTIVE — SERVER FEATURES STILL REQUIRE SERVER AUTH"
+            path:nil active:@"LOCAL TEST" error:NO];
+        [self rebuildInterface];
+        return;
+    }
+#endif
     NSUInteger generation = ++_sessionGeneration;
     _pendingLicenseKey = trimmed;
     [self setBusy:YES];

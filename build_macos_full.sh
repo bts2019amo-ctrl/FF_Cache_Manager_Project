@@ -48,7 +48,7 @@ for f in FFKernelExploit.h FFKernelExploit.m FFWorseQuery.h FFWorseQuery.m FFWor
 mkdir -p "$BUILD/vendor/worse_query"
 cp "$ROOT/vendor/worse_query"/* "$BUILD/vendor/worse_query/"
 
-COMMON=(-arch arm64 -target arm64-apple-ios15.0 -isysroot "$SDK" -fobjc-arc -Os -fstack-protector-strong -fvisibility=hidden -fomit-frame-pointer -fno-ident -Werror -Wno-deprecated-declarations -DFF_RELEASE_BUILD=1 -DFF_REQUIRE_SIGNED_RESPONSES=1 -DFF_3105_MCM=1 -DFF_MATCH_STATE=1 -I "$BUILD")
+COMMON=(-arch arm64 -target arm64-apple-ios15.0 -isysroot "$SDK" -fobjc-arc -Os -fstack-protector-strong -fvisibility=hidden -fomit-frame-pointer -fno-ident -Werror -Wno-deprecated-declarations -DFF_RELEASE_BUILD=1 -DFF_REQUIRE_SIGNED_RESPONSES=1 -DFF_3105_MCM=1 -DFF_MATCH_STATE=1 -DFF_LOCAL_TEST_KEY=1 -I "$BUILD")
 "$CLANG" "${COMMON[@]}" -c "$BUILD/main.m" -o "$BUILD/main.o"
 OBJECTS=("$BUILD/main.o")
 for src in FFMatchStateManager.m FFMatchStateViewController.m FFKernelExploit.m FFWorseQuery.m vendor/worse_query/worse_query.m; do
