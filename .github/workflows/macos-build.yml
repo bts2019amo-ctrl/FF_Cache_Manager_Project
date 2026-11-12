@@ -45,21 +45,35 @@ jobs:
 
   full-build:
     name: Full unsigned IPA build (when donor IPA is configured)
-    if: ${{ secrets.FILZA_DONOR_IPA_B64 != '' }}
     runs-on: macos-14
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check donor IPA configuration
+        id: donor
+        env:
+          FILZA_DONOR_IPA_B64: ${{ secrets.FILZA_DONOR_IPA_B64 }}
+        run: |
+          if [ -n "$FILZA_DONOR_IPA_B64" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "FILZA_DONOR_IPA_B64 is not configured; skipping the full IPA build."
+          fi
+
       - name: Set up Python
+        if: ${{ steps.donor.outputs.available == 'true' }}
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install build dependencies
+        if: ${{ steps.donor.outputs.available == 'true' }}
         run: python3 -m pip install --upgrade pillow lief cryptography
 
       - name: Restore donor IPA from repository secret
+        if: ${{ steps.donor.outputs.available == 'true' }}
         env:
           FILZA_DONOR_IPA_B64: ${{ secrets.FILZA_DONOR_IPA_B64 }}
         run: |
@@ -68,6 +82,7 @@ jobs:
           test -s donors/FilzaSlop_1.0.3.ipa
 
       - name: Build with the macOS-native toolchain
+        if: ${{ steps.donor.outputs.available == 'true' }}
         shell: pwsh
         run: |
           $env:FF_CLANG = (Get-Command clang).Source
@@ -75,6 +90,7 @@ jobs:
           ./build_clean.ps1 -FilzaIpa "$PWD/donors/FilzaSlop_1.0.3.ipa"
 
       - name: Upload unsigned IPA and manifests
+        if: ${{ steps.donor.outputs.available == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: ff-cache-manager-ios-build
