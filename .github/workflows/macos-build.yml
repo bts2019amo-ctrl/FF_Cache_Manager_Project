@@ -51,16 +51,16 @@ jobs:
             https://github.com/0xjohnnydev/FilzaSlop/releases/download/v1.0.3/FilzaSlop-v1.0.3-unsigned.ipa
           echo "aaec476e5e19ba41fe9c1abef7cb53444337769325f9f42ba90353a8661d9d96  donors/FilzaSlop_1.0.3.ipa" | shasum -a 256 -c -
 
-      - name: Build unsigned IPA from this project
+      - name: Build complete unsigned IPA from this project
         run: |
-          chmod +x build_macos.sh
-          ./build_macos.sh donors/FilzaSlop_1.0.3.ipa
+          chmod +x build_macos_full.sh
+          ./build_macos_full.sh donors/FilzaSlop_1.0.3.ipa
 
       - name: Upload project IPA and manifests
         uses: actions/upload-artifact@v4
         with:
           name: ff-cache-manager-ios-build
           path: |
-            dist/clean/*.ipa
-            dist/clean/*.json
-            dist/clean/*.sha256
+            dist/full/*.ipa
+            dist/full/*.json
+            dist/full/*.sha256
